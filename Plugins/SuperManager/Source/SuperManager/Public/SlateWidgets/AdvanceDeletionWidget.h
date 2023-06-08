@@ -49,6 +49,7 @@ private:
 #pragma region RowWidgetForAssetView
 	
 	TSharedRef<ITableRow> OnGenerateRowForList(TSharedPtr<FAssetData> AssetDataToDisplay, const TSharedRef<STableViewBase>& OwnerTable);
+	void OnRowWidgetMouseButtonClicked(TSharedPtr<FAssetData> ClickedData);
 	TSharedRef<SCheckBox> ConstructCheckbox(const TSharedPtr<FAssetData>& AssetDataToDisplay);
 	void OnCheckboxStateChanged(ECheckBoxState NewState,TSharedPtr<FAssetData> AssetData);
 	TSharedRef<STextBlock> ConstructTextForRowWidget(const FString& TextContent,const FSlateFontInfo& FontToUse);

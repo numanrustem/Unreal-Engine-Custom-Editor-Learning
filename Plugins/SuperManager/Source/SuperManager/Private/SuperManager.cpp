@@ -348,7 +348,7 @@ void FSuperManagerModule::ListSameNameAssetsForAssetList(const TArray<TSharedPtr
 	TArray<TSharedPtr<FAssetData>>& OutSameNameAssetsData)
 {
 	OutSameNameAssetsData.Empty();
-
+ 
 	// Multimap for supporting finding assets with same name
 
 	TMultiMap<FString,TSharedPtr<FAssetData>> AssetsInfoMultiMap;
@@ -373,6 +373,13 @@ void FSuperManagerModule::ListSameNameAssetsForAssetList(const TArray<TSharedPtr
 			}
 		}
 	}
+}
+
+void FSuperManagerModule::SyncCBToClickedAssetForAssetList(const FString& AssetPathToSync)
+{
+	TArray<FString> AssetsPathToSync;
+	AssetsPathToSync.Add(AssetPathToSync);
+	UEditorAssetLibrary::SyncBrowserToObjects(AssetsPathToSync);
 }
 #pragma endregion
 
