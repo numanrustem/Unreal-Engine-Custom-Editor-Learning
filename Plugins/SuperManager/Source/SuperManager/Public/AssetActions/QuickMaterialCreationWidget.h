@@ -26,4 +26,11 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="CreateMaterialFromSelectedTextures", meta=(EditCondition = "bCustomMaterialName"))
 	FString MaterialName = TEXT("M_");
 #pragma endregion
+
+private:
+#pragma region QuickMaterialCreation
+
+	bool ProcessSelectedData(const TArray<FAssetData>& SelectedDataToProcess,TArray<UTexture2D*>& OutSelectedTexturesArray,FString& OutSelectedTexturePackagePath);
+	bool CheckIsNameUsed(const FString& FolderPathToCheck,const FString& MaterialNameToCheck);
+#pragma endregion
 };
