@@ -19,8 +19,7 @@ namespace DebugHeader
 	}
 
 
-	static EAppReturnType::Type ShowMessageDialog(EAppMsgType::Type MsgType, const FString& Message,
-	                                              bool bShowMsgAsWarning = true)
+	static EAppReturnType::Type ShowMessageDialog(EAppMsgType::Type MsgType, const FString& Message,bool bShowMsgAsWarning = true)
 	{
 		if (bShowMsgAsWarning)
 		{

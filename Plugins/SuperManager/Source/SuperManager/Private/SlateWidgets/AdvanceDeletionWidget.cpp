@@ -54,6 +54,16 @@ void SAdvanceDeletionTab::Construct(const FArguments& InArgs)
 			[
 				ConstructComboBox()
 			]
+			+SHorizontalBox::Slot()
+			.FillWidth(.6f)
+			[
+				ConstructComboHelpTexts(TEXT("Specify the listing condition in the drop. Left mouse click to  go to asset where"),ETextJustify::Center)
+			]
+			+SHorizontalBox::Slot()
+			.FillWidth(.1f)
+			[
+				ConstructComboHelpTexts(TEXT("Current Folder:\n" + InArgs._CurrentSelectedFolder),ETextJustify::Right)
+			]
 		]
 		// Third slot for asset list
 		+SVerticalBox::Slot()
@@ -62,7 +72,7 @@ void SAdvanceDeletionTab::Construct(const FArguments& InArgs)
 			SNew(SScrollBox)
 			+SScrollBox::Slot()
 			[
-			ConstructAssetListView()
+				ConstructAssetListView()
 			]
 		]
 		// Fourth slot for 3 buttons
@@ -180,10 +190,21 @@ void SAdvanceDeletionTab::OnComboSelectionChanged(TSharedPtr<FString> SelectedOp
 	
 }
 
+TSharedRef<STextBlock> SAdvanceDeletionTab::ConstructComboHelpTexts(const FString& TextContent,	ETextJustify::Type TextJustify)
+{
+	TSharedRef<STextBlock> ConstructedHelpText = SNew(STextBlock)
+	.Text(FText::FromString(TextContent))
+	.Justification(TextJustify)
+	.AutoWrapText(true);
+
+	return ConstructedHelpText;
+}
 
 #pragma endregion
 
 #pragma region RowWidgetForAssetView
+
+
 
 
 TSharedRef<ITableRow> SAdvanceDeletionTab::OnGenerateRowForList(TSharedPtr<FAssetData> AssetDataToDisplay,
