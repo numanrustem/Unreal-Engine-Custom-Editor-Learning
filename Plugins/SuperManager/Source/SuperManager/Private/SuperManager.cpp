@@ -395,8 +395,6 @@ void FSuperManagerModule::ShutdownModule()
 	// we call this function before unloading the module.
 
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(FName("AdvanceDeletion"));
-
-	FSuperManagerModule::ShutdownModule();
 }
 
 #undef LOCTEXT_NAMESPACE
