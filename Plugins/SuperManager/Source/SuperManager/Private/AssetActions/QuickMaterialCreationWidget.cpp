@@ -25,7 +25,7 @@ void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 
 	TArray<UTexture2D*> SelectedTexturesArray;
 	FString SelectedTextureFolderPath;
-
+	uint32 PinsConnectedCounter = 0;
 	if(!ProcessSelectedData(SelectedAssetsData,SelectedTexturesArray,SelectedTextureFolderPath)) return;
 
 	if(CheckIsNameUsed(SelectedTextureFolderPath,MaterialName)) return;
@@ -37,6 +37,13 @@ void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 	{
 		DebugHeader::ShowMessageDialog(EAppMsgType::Ok,TEXT("Failed to create material"));
 		return;
+	}
+
+	for (UTexture2D* SelectedTexture : SelectedTexturesArray)
+	{
+		if (!SelectedTexture) continue;
+
+		Default_CreateMaterialNodes(CreatedMaterial,SelectedTexture,PinsConnectedCounter);
 	}
 }
 
@@ -87,6 +94,8 @@ bool UQuickMaterialCreationWidget::ProcessSelectedData(const TArray<FAssetData>&
 
 	return true;
 }
+
+
 // Will return true if the material name is used by asset under the specified folder
 bool UQuickMaterialCreationWidget::CheckIsNameUsed(const FString& FolderPathToCheck, const FString& MaterialNameToCheck)
 {
@@ -106,6 +115,7 @@ bool UQuickMaterialCreationWidget::CheckIsNameUsed(const FString& FolderPathToCh
 	return false;
 }
 
+// Create Material
 UMaterial* UQuickMaterialCreationWidget::CreateMaterialAsset(const FString& NameOfTheMaterial,
 	const FString& PathToPutMaterial)
 {
@@ -118,7 +128,50 @@ UMaterial* UQuickMaterialCreationWidget::CreateMaterialAsset(const FString& Name
 	return Cast<UMaterial>(CreatedObject);
 }
 
+void UQuickMaterialCreationWidget::Default_CreateMaterialNodes(UMaterial* CreatedMaterial, UTexture2D* SelectedTexture,
+	uint32& PinsConnectedCounter)
+{
+	UMaterialExpressionTextureSample* TextureSampleNode = NewObject<UMaterialExpressionTextureSample>(CreatedMaterial);
+	if (!TextureSampleNode) return;
+
+	if (!CreatedMaterial->BaseColor.IsConnected())
+	{
+		if (TryConnectBaseColor(TextureSampleNode,SelectedTexture,CreatedMaterial))
+		{
+			PinsConnectedCounter++;
+			return;
+		}
+	}
+}
+
 #pragma endregion
 
 
+#pragma region CreateMaterialNodes
 
+bool UQuickMaterialCreationWidget::TryConnectBaseColor(UMaterialExpressionTextureSample* TextureSampleNode,
+	UTexture2D* SelectedTexture, UMaterial* CreatedMaterial)
+{
+	for (const FString& BaseColorName : BaseColorArray)
+	{
+		if (SelectedTexture->GetName().Contains(BaseColorName))
+		{
+			// Connect to Pins Base Color Pin
+			TextureSampleNode->Texture = SelectedTexture;
+			CreatedMaterial->Expressions.Add(TextureSampleNode);
+			CreatedMaterial->BaseColor.Expression = TextureSampleNode;
+
+			CreatedMaterial->PostEditChange();
+
+			TextureSampleNode->MaterialExpressionEditorX -= 600;
+			
+
+			return true;
+			
+		}
+	}
+
+	return false;
+}
+
+#pragma endregion 
