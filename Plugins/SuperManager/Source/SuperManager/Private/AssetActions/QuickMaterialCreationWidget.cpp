@@ -7,6 +7,9 @@
 #include "EditorAssetLibrary.h"
 #include "AssetToolsModule.h"
 #include "Factories/MaterialFactoryNew.h"
+#include "Materials/MaterialInstanceConstant.h"
+#include "Factories/MaterialInstanceConstantFactoryNew.h"
+
 
 #pragma region QuickMaterialCreation
 
@@ -26,9 +29,9 @@ void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 	TArray<UTexture2D*> SelectedTexturesArray;
 	FString SelectedTextureFolderPath;
 	uint32 PinsConnectedCounter = 0;
-	if(!ProcessSelectedData(SelectedAssetsData,SelectedTexturesArray,SelectedTextureFolderPath)) return;
+	if(!ProcessSelectedData(SelectedAssetsData,SelectedTexturesArray,SelectedTextureFolderPath)) { MaterialName = TEXT("M_"); return;}
 
-	if(CheckIsNameUsed(SelectedTextureFolderPath,MaterialName)) return;
+	if(CheckIsNameUsed(SelectedTextureFolderPath,MaterialName)) { MaterialName = TEXT("M_"); return;}
 
 
 	UMaterial* CreatedMaterial =  CreateMaterialAsset(MaterialName,SelectedTextureFolderPath);
@@ -62,6 +65,13 @@ void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 	if (PinsConnectedCounter>0)
 	{
 		DebugHeader::ShowNotifyInfo(TEXT("Succesfuly connected ") + FString::FromInt(PinsConnectedCounter) + (TEXT(" pins")));
+	}
+
+	
+
+	if (bCreateMaterialInstance)
+	{
+		CreateMaterialInstanceAsset(CreatedMaterial,MaterialName,SelectedTextureFolderPath);
 	}
 
 	MaterialName = TEXT("M_");
@@ -333,8 +343,8 @@ bool UQuickMaterialCreationWidget::TryConnectNormal(UMaterialExpressionTextureSa
 		if (SelectedTexture->GetName().Contains(NormalName))
 		{
 			TextureSampleNode->Texture = SelectedTexture;
-			TextureSampleNode->SamplerType = EMaterialSamplerType::SAMPLERTYPE_LinearColor;
-			//TextureSampleNode->SamplerType = EMaterialSamplerType::SAMPLERTYPE_Normal; Unreal Error Needs To Be Linear Color for normal texture. I Think 5.1 Changes
+			//TextureSampleNode->SamplerType = EMaterialSamplerType::SAMPLERTYPE_LinearColor;
+			TextureSampleNode->SamplerType = EMaterialSamplerType::SAMPLERTYPE_Normal; //Unreal Error Needs To Be Linear Color for normal texture. I Think 5.1 Changes
 
 			CreatedMaterial->Expressions.Add(TextureSampleNode);
 			CreatedMaterial->Normal.Expression = TextureSampleNode;
@@ -409,4 +419,29 @@ bool UQuickMaterialCreationWidget::TryConnectORM(UMaterialExpressionTextureSampl
 	return false;
 }
 
-#pragma endregion 
+
+#pragma endregion
+
+
+UMaterialInstanceConstant* UQuickMaterialCreationWidget::CreateMaterialInstanceAsset(UMaterial* CreatedMaterial,
+	FString NameOfMaterialInstance, const FString& PathToPutMI)
+{
+
+	NameOfMaterialInstance.RemoveFromStart(TEXT("M_"));
+	NameOfMaterialInstance.InsertAt(0,TEXT("MI_"));
+
+	UMaterialInstanceConstantFactoryNew* MIFactoryNew =  NewObject<UMaterialInstanceConstantFactoryNew>();
+	FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>(TEXT("AssetTools"));
+
+	UObject* CreatedObject = AssetToolsModule.Get().CreateAsset(NameOfMaterialInstance,PathToPutMI,UMaterialInstanceConstant::StaticClass(),MIFactoryNew);
+	if (UMaterialInstanceConstant* CreatedMI = Cast<UMaterialInstanceConstant>(CreatedObject))
+	{
+		CreatedMI->SetParentEditorOnly(CreatedMaterial);
+		CreatedMI->PostEditChange();
+		CreatedMaterial->PostEditChange();
+		return CreatedMI;
+	}
+
+	return nullptr;
+}
+
