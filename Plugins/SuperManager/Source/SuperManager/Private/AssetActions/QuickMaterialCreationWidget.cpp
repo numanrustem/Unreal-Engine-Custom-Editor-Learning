@@ -8,7 +8,7 @@
 #include "AssetToolsModule.h"
 #include "Factories/MaterialFactoryNew.h"
 
-#pragma region QuickMaterialCreationCore
+#pragma region QuickMaterialCreation
 
 void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 {
@@ -43,7 +43,20 @@ void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 	{
 		if (!SelectedTexture) continue;
 
-		Default_CreateMaterialNodes(CreatedMaterial,SelectedTexture,PinsConnectedCounter);
+		switch (ChannelPackingType)
+		{
+			case E_ChannelPackingType::ECPT_NoChannelPacking:
+				Default_CreateMaterialNodes(CreatedMaterial,SelectedTexture,PinsConnectedCounter);
+				break;
+			case E_ChannelPackingType::ECPT_ORM:
+				ORM_CreateMaterialNodes(CreatedMaterial,SelectedTexture,PinsConnectedCounter);
+				break;
+			case E_ChannelPackingType::ECPT_MAX:
+				break;
+			default:
+				break;
+		}
+		
 	}
 
 	if (PinsConnectedCounter>0)
@@ -57,7 +70,7 @@ void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 
 #pragma endregion
 
-#pragma region QuickMaterialCreation
+#pragma region QuickMaterialCreationCore
 
 
 // Process the selected data, will filter out textures, and return false if non-texture selected  
@@ -190,6 +203,40 @@ void UQuickMaterialCreationWidget::Default_CreateMaterialNodes(UMaterial* Create
 	DebugHeader::Print(TEXT("Failed to connect the texture: ") + SelectedTexture->GetName() , FColor::Red);
 }
 
+
+void UQuickMaterialCreationWidget::ORM_CreateMaterialNodes(UMaterial* CreatedMaterial, UTexture2D* SelectedTexture,
+	uint32& PinsConnectedCounter)
+{
+	UMaterialExpressionTextureSample* TextureSampleNode = NewObject<UMaterialExpressionTextureSample>(CreatedMaterial);
+	if (!TextureSampleNode) return;
+
+	if (!CreatedMaterial->BaseColor.IsConnected())
+	{
+		if (TryConnectBaseColor(TextureSampleNode,SelectedTexture,CreatedMaterial))
+		{
+			PinsConnectedCounter++;
+			return;
+		}
+	}
+
+	if (!CreatedMaterial->Normal.IsConnected())
+	{
+		if (TryConnectNormal(TextureSampleNode,SelectedTexture,CreatedMaterial))
+		{
+			PinsConnectedCounter++;
+			return;
+		}
+	}
+
+	if (!CreatedMaterial->Roughness.IsConnected())
+	{
+		if (TryConnectORM(TextureSampleNode,SelectedTexture,CreatedMaterial))
+		{
+			PinsConnectedCounter+=3;
+			return;
+		}
+	}
+}
 #pragma endregion
 
 
@@ -328,6 +375,37 @@ bool UQuickMaterialCreationWidget::TryConnectAO(UMaterialExpressionTextureSample
 		}
 	}
 
+	return false;
+}
+
+bool UQuickMaterialCreationWidget::TryConnectORM(UMaterialExpressionTextureSample* TextureSampleNode,
+	UTexture2D* SelectedTexture, UMaterial* CreatedMaterial)
+{
+
+	for (const FString& ORM_Name : ORMArray)
+	{
+		if (SelectedTexture->GetName().Contains(ORM_Name))
+		{
+			SelectedTexture->CompressionSettings = TextureCompressionSettings::TC_Masks;
+			SelectedTexture->SRGB = false;
+			SelectedTexture->PostEditChange();
+
+			TextureSampleNode->Texture = SelectedTexture;
+			TextureSampleNode->SamplerType = EMaterialSamplerType::SAMPLERTYPE_Masks;
+
+			CreatedMaterial->Expressions.Add(TextureSampleNode);
+			CreatedMaterial->AmbientOcclusion.Connect(1,TextureSampleNode);
+			CreatedMaterial->Roughness.Connect(2,TextureSampleNode);
+			CreatedMaterial->Metallic.Connect(3,TextureSampleNode);
+			CreatedMaterial->PostEditChange();
+
+			TextureSampleNode->MaterialExpressionEditorX -= 600;
+			TextureSampleNode->MaterialExpressionEditorY += 960;
+
+			return true;
+		}
+	}
+	
 	return false;
 }
 
