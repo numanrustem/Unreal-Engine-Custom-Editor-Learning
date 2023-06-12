@@ -45,6 +45,11 @@ void UQuickMaterialCreationWidget::CreateMaterialFromSelectedTextures()
 
 		Default_CreateMaterialNodes(CreatedMaterial,SelectedTexture,PinsConnectedCounter);
 	}
+
+	if (PinsConnectedCounter>0)
+	{
+		DebugHeader::ShowNotifyInfo(TEXT("Succesfuly connected ") + FString::FromInt(PinsConnectedCounter) + (TEXT(" pins")));
+	}
 }
 
 
@@ -142,12 +147,21 @@ void UQuickMaterialCreationWidget::Default_CreateMaterialNodes(UMaterial* Create
 			return;
 		}
 	}
+
+	if (!CreatedMaterial->Metallic.IsConnected())
+	{
+		if (TryConnectMetalic(TextureSampleNode,SelectedTexture,CreatedMaterial))
+		{
+			PinsConnectedCounter++;
+			return;
+		}
+	}
 }
 
 #pragma endregion
 
 
-#pragma region CreateMaterialNodes
+#pragma region CreateMaterialNodesConnectPins
 
 bool UQuickMaterialCreationWidget::TryConnectBaseColor(UMaterialExpressionTextureSample* TextureSampleNode,
 	UTexture2D* SelectedTexture, UMaterial* CreatedMaterial)
@@ -168,6 +182,34 @@ bool UQuickMaterialCreationWidget::TryConnectBaseColor(UMaterialExpressionTextur
 
 			return true;
 			
+		}
+	}
+
+	return false;
+}
+
+bool UQuickMaterialCreationWidget::TryConnectMetalic(UMaterialExpressionTextureSample* TextureSampleNode,
+	UTexture2D* SelectedTexture, UMaterial* CreatedMaterial)
+{
+	for (const FString& MetalicName : MetallicArray)
+	{
+		if (SelectedTexture->GetName().Contains(MetalicName))
+		{
+			SelectedTexture->CompressionSettings = TextureCompressionSettings::TC_Default;
+			SelectedTexture->SRGB = false;
+			SelectedTexture->PostEditChange();
+
+			TextureSampleNode->Texture = SelectedTexture;
+			TextureSampleNode->SamplerType = EMaterialSamplerType::SAMPLERTYPE_LinearColor;
+
+			CreatedMaterial->Expressions.Add(TextureSampleNode);
+			CreatedMaterial->Metallic.Expression = TextureSampleNode;
+			CreatedMaterial->PostEditChange();
+
+			TextureSampleNode->MaterialExpressionEditorX -= 600;
+			TextureSampleNode->MaterialExpressionEditorY += 240;
+
+			return true;
 		}
 	}
 
